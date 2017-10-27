@@ -482,23 +482,23 @@ router.route('/users/:userID/this_month/')
 router.route('/users/:userID/appointments/')
     .get((req, res)=>
     {
-        res.sendFile('/dist/html/appointments.html', {root:'.'}, ()=>{console.log("Want to Add a New Appointment");});
-        //Commenting out this part so that server may provide HTML content
-        // getUserFromMap(req.params.userID)
-        //     .then((user)=>
-        //     {
-        //         let string = "";
-        //         for(let appointment of user.getAllAppointments())
-        //         {
-        //             string += appointment.toString()+"\n";
-        //         }
-        //
-        //         res.send(string);
-        //     })
-        //     .catch((message)=>
-        //     {
-        //         res.send("USER DOES NOT EXIST"+message);
-        //     });
+        // res.sendFile('/dist/html/appointments.html', {root:'.'}, ()=>{console.log("Want to Add a New Appointment");});
+        Commenting out this part so that server may provide HTML content
+        getUserFromMap(req.params.userID)
+            .then((user)=>
+            {
+                let string = "";
+                for(let appointment of user.getAllAppointments())
+                {
+                    string += appointment.toString()+"\n";
+                }
+
+                res.send(string);
+            })
+            .catch((message)=>
+            {
+                res.send("USER DOES NOT EXIST"+message);
+            });
     })
     .post((req, res)=>
     {
@@ -581,14 +581,14 @@ router.route('/users/:userID/appointments/')
 router.route('/users/')
     .get((req, res)=>
     {
-        res.sendFile('dist/html/login.html', {root:'.'}, ()=>{console.log("Want Users");});
-        // let returnString = "";
-        // for(let userObject of users.values())
-        // {
-        //     returnString+=userObject.toString()+"=========================\n"
-        // }
-        //
-        // res.send(returnString);
+        // res.sendFile('dist/html/login.html', {root:'.'}, ()=>{console.log("Want Users");});
+        let returnString = "";
+        for(let userObject of users.values())
+        {
+            returnString+=userObject.toString()+"=========================\n"
+        }
+
+        res.send(returnString);
     });
 
 //=========================== Routing Simple Get and Delete ======================================
