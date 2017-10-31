@@ -26,7 +26,10 @@
     <div class="collapse navbar-collapse" id="navbarsExampleDefault">
         <ul class="navbar-nav mr-auto">
             <li class="nav-item active">
-                <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                <a class="nav-link" href="#">Home<span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="localhost:5000/html/profile.html">Profile<span class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item active">
                 <a class="nav-link" href="#">Sign In</a>
@@ -43,11 +46,13 @@
 
     <div class="starter-template">
         <h1>Welcome to utuezi!</h1>
-        <p class="lead"></br></p>
+        <br>
+        <button class="btn btn-outline-success" id="showMonth" onclick="fetchThisMonth">
+            This Month's Appointments
+        </button>
     </div>
 
-    <section>
-        
+    <section id="this_month">
     </section>
 
 </div><!-- /.container -->
@@ -62,6 +67,5 @@
 <script src="../js/bootstrap.js"></script>
 <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
 <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
-<script src="../../client.js"></script>
 </body>
 </html>

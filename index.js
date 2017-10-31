@@ -176,12 +176,48 @@ let loadFromFireBase = true;
 
 class User
 {
-    constructor(uName, uEmail)
+    constructor(name, lastName, uName, uEmail)
     {
         this.username = uName;
+        this.name = name;
+        this.lastName = lastName;
         this.email = uEmail;
         this.friendUIDS = new Set();
         this.appointments = new Map();
+    }
+
+    getName()
+    {
+        return this.name;
+    }
+
+    getFullName()
+    {
+        return this.name + " " + this.lastName;
+    }
+
+    setName(name)
+    {
+        this.name = name;
+    }
+
+    getLastName()
+    {
+        return this.lastName;
+    }
+
+    setLastName(name)
+    {
+        this.lastName = name;
+    }
+
+    makeSerializable()
+    {
+        let newUser = new User(this.getName(), this.getLastName(), this.getUserName(), this.getEmail());
+        newUser.friendUIDS = Array.from(this.getFriendUIDS());
+        newUser.appointments = Array.from(this.getAppointments());
+
+        return newUser;
     }
 
     getEmail()
@@ -300,12 +336,24 @@ class Appointment
         this.startDate = startDate;
         this.endDate = endDate;
 
+        this.parties = [];
+
         for(let party of parties)
         {
             this.addParty(user, party);
         }
 
         this.description = description;
+    }
+
+    makeSerializable()
+    {
+
+    }
+
+    restoreToUnserializable()
+    {
+
     }
 
     getStartDate()
@@ -411,22 +459,22 @@ function appointmentsOverlap(start1, end1, start2, end2)
         return false;
 }
 
-router.route('/users/:userID/appointments/:month')
+router.route('/users/:username/appointments/:month')
     .get((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((user)=>
             {
-                let string = "";
+                let monthAppointments = [];
                 for(let appointment of user.getAllAppointments())
                 {
                     if(appointment.getMonth() == (req.params.month-1))
-                        string += appointment.toString()+"\n";
+                        monthAppointments.push(appointment);
                     else
-                        string += "Not IN MONTH"+"\n";
+                        console.log("Not IN MONTH");
                 }
 
-                res.send(string);
+                res.send(JSON.stringify(monthAppointments));
             })
             .catch((message)=>
             {
@@ -439,37 +487,39 @@ function getThisMonths(user)
     return new Promise((resolve, reject)=>
     {
         let today = new Date();
-        let string = "Today's month is: " + today.getUTCMonth() + "\nAppointments:\n";
+        console.log("Today's month is: " + today.getUTCMonth());
+
+        let thisMonths = [];
 
         for(let appointment of user.getAllAppointments())
         {
             if(appointment.getMonth() == (today.getUTCMonth()))
-                string += appointment.toString()+"\n";
+                thisMonths.push(appointment);
             else
-                string += "Not IN MONTH"+"\n";
+                console.log("Not IN MONTH");
         }
 
-        if(!string.includes("Today's month is"))
+        if(thisMonths.empty())
         {
-            reject("String Was Not Completed");
+            reject("No Appointments this Month");
         }
         else
         {
-            resolve(string);
+            resolve(thisMonths);
         }
     });
 }
 
-router.route('/users/:userID/this_month/')
+router.route('/users/:username/this_month/')
     .get((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((user)=>
             {
                 getThisMonths(user)
-                    .then((string)=>
+                    .then((appointments)=>
                     {
-                        res.send(string);
+                        res.send(JSON.stringify(appointments));
                     })
                     .catch((error)=>{res.send(""+error)});
             })
@@ -479,21 +529,21 @@ router.route('/users/:userID/this_month/')
             });
     });
 
-router.route('/users/:userID/appointments/')
+router.route('/users/:username/appointments/')
     .get((req, res)=>
     {
         // res.sendFile('/dist/html/appointments.html', {root:'.'}, ()=>{console.log("Want to Add a New Appointment");});
-        Commenting out this part so that server may provide HTML content
-        getUserFromMap(req.params.userID)
+        // Commenting out this part so that server may provide HTML content
+        getUserFromMap(req.params.username)
             .then((user)=>
             {
-                let string = "";
+                let appointments = [];
                 for(let appointment of user.getAllAppointments())
                 {
-                    string += appointment.toString()+"\n";
+                    appointments.push(appointment);
                 }
 
-                res.send(string);
+                res.send(JSON.stringify(appointments));
             })
             .catch((message)=>
             {
@@ -502,7 +552,7 @@ router.route('/users/:userID/appointments/')
     })
     .post((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((user)=>
             {
                 let sDate = new Date(req.body.startDate);
@@ -533,7 +583,7 @@ router.route('/users/:userID/appointments/')
     })
     .put((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((user)=>
             {
                 let sDate = new Date(req.body.startDate);
@@ -557,7 +607,7 @@ router.route('/users/:userID/appointments/')
     })
     .delete((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((user)=>
             {
                 let sDate = new Date(req.body.startDate);
@@ -582,23 +632,42 @@ router.route('/users/')
     .get((req, res)=>
     {
         // res.sendFile('dist/html/login.html', {root:'.'}, ()=>{console.log("Want Users");});
-        let returnString = "";
+        let retval = [];
         for(let userObject of users.values())
         {
-            returnString+=userObject.toString()+"=========================\n"
+            retval.push(userObject.makeSerializable());
         }
 
-        res.send(returnString);
+        res.send(JSON.stringify(retval));
+    })
+    .post((req, res)=>
+    {
+        getUserFromMap(req.body.username)
+            .then((retrieved)=>
+            {
+                res.send(retrieved.getUserName()+" already exists. Please choose a different username.");
+            })
+            .catch((error)=>
+            {
+                let newUser = new User(req.body.name, req.body.lastName, req.body.username, req.body.email);
+                users.set(req.body.username.toLowerCase(), newUser);
+                saveUserToDatabase(newUser.makeSerializable());
+                res.send("Created new user successfully: " + newUser.toString());
+            });
+        // let newUser = new User(req.body.name, req.body.lastName, req.body.username, req.body.email);
+        // users.set(req.body.username.toLowerCase(), newUser);
+        // saveUserToDatabase(newUser);
+        // res.send("Created new user successfully: " + newUser.toString());
     });
 
 //=========================== Routing Simple Get and Delete ======================================
-router.route('/users/:userID/')
+router.route('/users/:username/')
     .get((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((retrieved)=>
             {
-                res.send(retrieved.toString());
+                res.send(JSON.stringify(retrieved.makeSerializable()));
             })
             .catch((error)=>
             {
@@ -607,7 +676,7 @@ router.route('/users/:userID/')
     })
     .delete((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((retrieved)=>
             {
                 users.delete(retrieved.getUserName().toLowerCase());
@@ -622,11 +691,11 @@ router.route('/users/:userID/')
 
 //============================== End of Simple Routing and Deleting ==============================
 
-//============================== Routing with UserID and Email ===================================
-router.route('/users/:userID/email')
+//============================== Routing with username and Email ===================================
+router.route('/users/:username/email')
     .put((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((retrieved)=>
             {
                 retrieved.setEmail(req.body.email);
@@ -638,23 +707,6 @@ router.route('/users/:userID/email')
                 res.send(error);
             });
     });
-
-router.route('/users/:userID/')
-    .post((req, res)=>
-    {
-        getUserFromMap(req.params.userID)
-            .then((retrieved)=>
-            {
-                res.send(retrieved.getUserName()+" already exists. Please choose a different username.");
-            })
-            .catch((error)=>
-            {
-                let newUser = new User(req.params.userID, req.body.email);
-                users.set(req.params.userID.toLowerCase(), newUser);
-                saveUserToDatabase(newUser);
-                res.send("Created new user successfully: " + newUser.toString());
-            });
-    });
 //================================================================================================
 
 router.route('/')
@@ -664,11 +716,11 @@ router.route('/')
     });
 
 
-//Routing with userID, and friendID===============================================================
-router.route('/users/:userID/friends/:friendID')
+//Routing with username, and friendID===============================================================
+router.route('/users/:username/friends/:friendID')
     .get((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((retrieved)=>
             {
                 if(retrieved.isFriend(req.params.friendID))
@@ -676,7 +728,7 @@ router.route('/users/:userID/friends/:friendID')
                     getUserFromMap(req.params.friendID)
                         .then((friend)=>
                         {
-                            res.send("Got the friend " + friend.toString());
+                            res.send(JSON.stringify(friend.makeSerializable()));
                         })
                         .catch((error)=>
                         {
@@ -695,7 +747,7 @@ router.route('/users/:userID/friends/:friendID')
     })
     .put((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((retrieved)=>
             {
                 getUserFromMap(req.params.friendID)
@@ -717,7 +769,7 @@ router.route('/users/:userID/friends/:friendID')
     })
     .delete((req, res)=>
     {
-        getUserFromMap(req.params.userID)
+        getUserFromMap(req.params.username)
             .then((retrieved)=>
             {
                 getUserFromMap(req.params.friendID)
@@ -741,11 +793,11 @@ router.route('/users/:userID/friends/:friendID')
 //================================================================================================
 
 
-function getUserFromMap(userID)
+function getUserFromMap(username)
 {
     return new Promise((resolve, reject)=>
     {
-        let retrieved = users.get(userID.toLowerCase());
+        let retrieved = users.get(username.toLowerCase());
 
         if(retrieved === undefined)
         {
@@ -793,7 +845,7 @@ function downloadDataFromFireBase()
             for(let element in data)
             {
                 user = data[element];
-                let newUser = new User(user.username, user.email);
+                let newUser = new User(user.name, user.lastName, user.username, user.email);
                 downloadFriends(newUser);
                 //console.log(user);
                 users.set(user.username, newUser);
@@ -832,7 +884,7 @@ function saveUserToDatabase(data)
 {
     database.ref('users/' + data.getUserName()).set(data);
     //this part isn't working. Set is somehow not put into the tree.
-    addFriendListToDatabase(data);
+    addFriendListToDatabase(data.makeSerializable());
 }
 
 function addFriendListToDatabase(data)

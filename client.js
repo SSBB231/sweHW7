@@ -1,9 +1,9 @@
 const fetch = require('node-fetch');
 
 //	Send	data	to	remote	service
-fetch("localhost:5000/users/")
+fetch("localhost:5000/users/:userID")
     .then(function(res)
     {
-        document.getElementById().innerHTML = res.htmlText;
+
     })
     .catch(function(res){});

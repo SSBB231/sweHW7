@@ -15,3 +15,17 @@
 	"endDate":"2017-10-17",
 	"description":"birthday"
 }
+
+{
+	"name":"Anthony",
+	"lastName":"Higgs",
+	"username":"ssbb300",
+	"email":"ahiggs@gmail.com"
+}
+
+{
+	"name":"Samus",
+	"lastName":"Aran",
+	"username":"chozogirl",
+	"email":"saran@gmail.com"
+}
